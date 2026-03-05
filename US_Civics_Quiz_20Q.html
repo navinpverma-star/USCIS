@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U.S. Civics Quiz – 20 Questions</title>
+<style>
+  :root {
+    --blue: #003366;
+    --red: #B22234;
+    --gold: #FFD700;
+    --green: #2e7d32;
+    --green-bg: #e8f5e9;
+    --red-bg: #ffebee;
+    --gray: #546e7a;
+    --light: #f0f4f8;
+    --shadow: 0 4px 24px rgba(0,0,0,0.13);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: var(--light); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+  .site-header { background: linear-gradient(135deg, #002244 0%, #003366 60%, #1a4a80 100%); color: white; text-align: center; padding: 18px 20px 16px; position: relative; overflow: hidden; }
+  .site-header::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, var(--red) 0, var(--red) 50%, white 50%, white 100%); background-size: 40px 4px; }
+  .site-header h1 { font-size: 1.45rem; font-weight: 800; }
+  .site-header p  { font-size: 0.82rem; opacity: 0.8; margin-top: 3px; }
+
+  /* ── START SCREEN ── */
+  #start-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 30px 20px; }
+  .start-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 40px 36px; max-width: 500px; width: 100%; text-align: center; }
+  .start-card .big-emoji { font-size: 3.8rem; margin-bottom: 12px; }
+  .start-card h2 { font-size: 1.65rem; color: var(--blue); margin-bottom: 10px; }
+  .start-card .intro { color: var(--gray); font-size: 0.95rem; line-height: 1.6; margin-bottom: 4px; }
+  .rules-box { background: var(--light); border-radius: 12px; padding: 16px 22px; margin: 18px 0 26px; text-align: left; }
+  .rules-box li { color: #333; font-size: 0.92rem; line-height: 1.75; list-style: none; }
+  .rules-box li::before { content: "✦ "; color: var(--blue); font-size: 0.78rem; }
+  .btn-start { padding: 14px 44px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.18s; font-family: inherit; }
+  .btn-start:hover { background: #1a4a80; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,51,102,0.25); }
+
+  /* ── QUIZ SCREEN ── */
+  #quiz-screen { flex: 1; display: none; flex-direction: column; }
+
+  .scorebar { background: white; border-bottom: 1px solid #dde3ea; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .score-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+  .chip-correct { background: var(--green-bg); color: var(--green); }
+  .chip-wrong   { background: var(--red-bg); color: var(--red); }
+  .chip-need    { background: #fff8e1; color: #e65100; }
+  .chip-qnum   { background: #e3f2fd; color: #1565c0; font-size: 0.82rem; }
+
+  .prog-wrap { padding: 7px 20px 6px; background: white; border-bottom: 1px solid #eee; }
+  .prog-meta { display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--gray); margin-bottom: 4px; }
+  .prog-bar  { height: 7px; background: #dde3ea; border-radius: 8px; overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--gold)); border-radius: 8px; transition: width 0.5s ease; }
+
+  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; max-width: 700px; width: 100%; margin: 0 auto; }
+
+  .question-card { width: 100%; background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 32px 26px; border-left: 6px solid var(--blue); animation: cardIn 0.32s ease; transition: border-color 0.28s; }
+  .question-card.correct { border-left-color: var(--green); }
+  .question-card.wrong   { border-left-color: var(--red); }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+  .q-toprow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .q-num-label { font-size: 0.78rem; font-weight: 700; color: var(--gray); background: var(--light); padding: 4px 14px; border-radius: 20px; }
+  .audio-btn { background: var(--blue); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.18s; flex-shrink: 0; }
+  .audio-btn:hover { background: #1a4a80; transform: scale(1.1); }
+  .audio-btn.speaking { background: var(--gold); color: var(--blue); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.15); } }
+
+  .q-text { font-size: 1.18rem; font-weight: 700; color: #1a1a2e; line-height: 1.58; }
+  .q-text strong { color: var(--blue); background: #e8f0fe; padding: 0 3px; border-radius: 3px; }
+
+  .options-list { width: 100%; display: flex; flex-direction: column; gap: 11px; margin-top: 22px; }
+  .opt { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border: 2px solid #dde3ea; border-radius: 13px; background: var(--light); cursor: pointer; font-size: 0.95rem; font-weight: 500; line-height: 1.4; color: #222; text-align: left; font-family: inherit; transition: all 0.16s; width: 100%; }
+  .opt:hover:not(:disabled) { border-color: var(--blue); background: #e8f0fe; color: var(--blue); transform: translateX(5px); box-shadow: 0 3px 12px rgba(0,51,102,0.1); }
+  .opt .badge { min-width: 28px; height: 28px; border-radius: 50%; background: #b0bec5; color: white; font-size: 0.82rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: background 0.16s; }
+  .opt.opt-correct { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .opt.opt-correct .badge { background: var(--green); }
+  .opt.opt-wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+  .opt.opt-wrong .badge { background: var(--red); }
+  .opt:disabled { cursor: default; transform: none !important; box-shadow: none !important; }
+
+  .feedback { margin-top: 16px; padding: 12px 18px; border-radius: 10px; font-size: 0.92rem; font-weight: 600; display: none; animation: fadeIn 0.25s; }
+  .feedback.show { display: flex; align-items: flex-start; gap: 10px; }
+  .feedback.fb-correct { background: var(--green-bg); color: var(--green); border-left: 4px solid var(--green); }
+  .feedback.fb-wrong   { background: var(--red-bg); color: #c62828; border-left: 4px solid var(--red); }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .next-btn { display: none; margin-top: 24px; padding: 14px 46px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.18s; font-family: inherit; align-self: flex-end; }
+  .next-btn:hover { background: #1a4a80; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,51,102,0.25); }
+  .next-btn.show { display: block; animation: fadeIn 0.3s; }
+
+  /* ── RESULT SCREEN ── */
+  #result-screen { flex: 1; display: none; align-items: center; justify-content: center; padding: 30px 20px; }
+  .result-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 44px 36px; max-width: 500px; width: 100%; text-align: center; }
+  .result-card .r-emoji { font-size: 4.5rem; margin-bottom: 12px; }
+  .result-card h2 { font-size: 1.9rem; color: var(--blue); margin-bottom: 8px; }
+  .r-score-display { display: flex; align-items: baseline; justify-content: center; gap: 4px; margin: 12px 0 4px; }
+  .r-score-big { font-size: 4rem; font-weight: 900; color: var(--blue); line-height: 1; }
+  .r-score-denom { font-size: 1.8rem; font-weight: 700; color: var(--gray); }
+  .r-sub { font-size: 0.9rem; color: var(--gray); margin-bottom: 4px; }
+  .r-pass-badge { display: inline-block; margin: 10px 0 4px; padding: 5px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
+  .r-pass-badge.pass { background: var(--green-bg); color: var(--green); }
+  .r-pass-badge.fail { background: var(--red-bg); color: var(--red); }
+  .r-msg { font-size: 0.95rem; color: #444; margin: 14px 0 28px; line-height: 1.65; background: var(--light); border-radius: 12px; padding: 16px 20px; }
+  .result-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-again { padding: 13px 36px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.18s; font-family: inherit; }
+  .btn-again:hover { background: #1a4a80; transform: translateY(-2px); }
+
+  /* ── BALLOONS ── */
+  #balloon-container { position: fixed; inset: 0; pointer-events: none; z-index: 500; overflow: hidden; }
+  .balloon { position: absolute; bottom: -140px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%; }
+  .balloon::after { content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); width: 1.5px; height: 18px; background: rgba(0,0,0,0.22); }
+  .balloon.anim { animation: balloonRise var(--dur) ease-in forwards; }
+  @keyframes balloonRise {
+    0%   { transform: translateY(0) rotate(var(--tilt)); opacity: 0.92; }
+    100% { transform: translateY(-115vh) rotate(calc(var(--tilt) * -1 + 8deg)); opacity: 0; }
+  }
+
+  /* ── PEP TOAST ── */
+  #pep-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(130px); background: #37474f; color: white; padding: 14px 26px; border-radius: 16px; font-size: 1rem; font-weight: 600; box-shadow: 0 6px 28px rgba(0,0,0,0.28); z-index: 600; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), opacity 0.42s; opacity: 0; max-width: 360px; width: calc(100% - 40px); text-align: center; pointer-events: none; }
+  #pep-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  @media (max-width: 520px) {
+    .question-card { padding: 20px 16px; }
+    .q-text { font-size: 1.04rem; }
+    .opt { padding: 12px 13px; font-size: 0.9rem; }
+    .next-btn { align-self: stretch; text-align: center; }
+    .start-card { padding: 30px 22px; }
+    .result-card { padding: 34px 22px; }
+  }
+
+  footer { text-align: center; padding: 14px; font-size: 0.75rem; color: var(--gray); background: white; border-top: 1px solid #eee; margin-top: auto; }
+  footer a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <h1>&#127482;&#127480; U.S. Civics Quiz</h1>
+  <p>Official 2025 USCIS Questions &mdash; 20 Random Questions</p>
+</div>
+
+<!-- ── START SCREEN ── -->
+<div id="start-screen">
+  <div class="start-card">
+    <div class="big-emoji">&#128203;</div>
+    <h2>Ready to Practice?</h2>
+    <p class="intro">You'll get <strong>20 random questions</strong> from the official USCIS civics bank &mdash; one at a time, read aloud for you.</p>
+    <ul class="rules-box">
+      <li>Each question is read aloud automatically &#128266;</li>
+      <li>Tap &#128266; to replay the question &amp; all options</li>
+      <li>Score <strong>12 or more correct</strong> to pass</li>
+      <li>The quiz ends early if you've already passed &mdash; or if it's mathematically impossible to pass</li>
+      <li>&#127880; Balloons pop for every correct answer!</li>
+      <li>You'll get a pep talk if you answer wrong &#128170;</li>
+    </ul>
+    <button class="btn-start" onclick="startQuiz()">Start Quiz &#8594;</button>
+  </div>
+</div>
+
+<!-- ── QUIZ SCREEN ── -->
+<div id="quiz-screen">
+  <div class="scorebar">
+    <div class="score-chips">
+      <span class="chip chip-correct">&#10003; Correct: <span id="sc">0</span></span>
+      <span class="chip chip-wrong">&#10007; Wrong: <span id="sw">0</span></span>
+      <span class="chip chip-need">Need <span id="sn">12</span> more</span>
+    </div>
+    <span class="chip chip-qnum">Q&nbsp;<span id="sq">1</span>&nbsp;/ 20</span>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-meta">
+      <span id="prog-text">Question 1 of 20</span>
+      <span id="prog-pct">0% complete</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="stage">
+    <div class="question-card" id="question-card">
+      <div class="q-toprow">
+        <span class="q-num-label" id="q-num-label">Question 1 of 20</span>
+        <button class="audio-btn" id="audio-btn" onclick="replay()" title="Replay question &amp; options">&#128266;</button>
+      </div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+
+    <div class="options-list" id="options"></div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <button class="next-btn" id="next-btn" onclick="nextQ()">Next Question &#8594;</button>
+  </div>
+</div>
+
+<!-- ── RESULT SCREEN ── -->
+<div id="result-screen">
+  <div class="result-card">
+    <div class="r-emoji" id="r-emoji">&#127881;</div>
+    <h2 id="r-title">Quiz Complete!</h2>
+    <div class="r-score-display">
+      <span class="r-score-big" id="r-score-big">0</span>
+      <span class="r-score-denom">&nbsp;/ 20</span>
+    </div>
+    <div class="r-sub">correct answers</div>
+    <div class="r-pass-badge" id="r-pass-badge"></div>
+    <div class="r-msg" id="r-msg"></div>
+    <div class="result-btns">
+      <button class="btn-again" onclick="restartQuiz()">&#8635; Try Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BALLOONS ── -->
+<div id="balloon-container"></div>
+
+<!-- ── PEP TOAST ── -->
+<div id="pep-toast"></div>
+
+<footer>
+  Source: USCIS 128 Civics Questions (2025) &nbsp;&bull;&nbsp;
+  <a href="https://uscis.gov/citizenship/testupdates" target="_blank">uscis.gov/citizenship/testupdates</a>
+</footer>
+
+<script>
+// ── 128 OFFICIAL QUESTIONS ──
+var Q = [{"q": "What is the **form of government** of the United States?", "hindi": "संयुक्त राज्य अमेरिका की **सरकार का स्वरूप** क्या है?", "correct": "Republic / Constitutional federal republic", "wrong": ["Direct democracy", "Monarchy", "Oligarchy"], "options": ["Monarchy", "Republic / Constitutional federal republic", "Direct democracy", "Oligarchy"], "answer_index": 1}, {"q": "What is the **supreme law** of the land?", "hindi": "देश का **सर्वोच्च कानून** क्या है?", "correct": "The U.S. Constitution", "wrong": ["The Declaration of Independence", "The Bill of Rights", "The Federalist Papers"], "options": ["The Bill of Rights", "The Declaration of Independence", "The Federalist Papers", "The U.S. Constitution"], "answer_index": 3}, {"q": "Name one thing the **U.S. Constitution** does.", "hindi": "**अमेरिकी संविधान** एक काम बताइए जो करता है।", "correct": "Defines powers of government", "wrong": ["Declares war on other nations", "Sets the federal budget", "Elects the president"], "options": ["Defines powers of government", "Sets the federal budget", "Elects the president", "Declares war on other nations"], "answer_index": 0}, {"q": "What does **\"We the People\"** mean in the U.S. Constitution?", "hindi": "अमेरिकी संविधान में **\"हम लोग\"** का क्या अर्थ है?", "correct": "Self-government / Popular sovereignty", "wrong": ["A tribute to the Founding Fathers", "Equality of all races", "Freedom from taxation"], "options": ["Equality of all races", "Freedom from taxation", "Self-government / Popular sovereignty", "A tribute to the Founding Fathers"], "answer_index": 2}, {"q": "How are **changes** made to the U.S. Constitution?", "hindi": "अमेरिकी संविधान में **बदलाव** कैसे किए जाते हैं?", "correct": "Amendments", "wrong": ["Presidential decrees", "Supreme Court rulings", "Congressional votes alone"], "options": ["Presidential decrees", "Supreme Court rulings", "Congressional votes alone", "Amendments"], "answer_index": 3}, {"q": "What does the **Bill of Rights** protect?", "hindi": "**अधिकार विधेयक** किसकी रक्षा करता है?", "correct": "The basic rights of Americans", "wrong": ["The powers of the president", "The authority of Congress", "The structure of the military"], "options": ["The powers of the president", "The structure of the military", "The basic rights of Americans", "The authority of Congress"], "answer_index": 2}, {"q": "How many **amendments** does the U.S. Constitution have?", "hindi": "अमेरिकी संविधान में कितने **संशोधन** हैं?", "correct": "Twenty-seven (27)", "wrong": ["Ten (10)", "Twenty (20)", "Thirty (30)"], "options": ["Thirty (30)", "Twenty (20)", "Ten (10)", "Twenty-seven (27)"], "answer_index": 3}, {"q": "Why is the **Declaration of Independence** important?", "hindi": "**स्वतंत्रता की घोषणा** क्यों महत्वपूर्ण है?", "correct": "It says America is free from British control", "wrong": ["It established the three branches of government", "It created the Bill of Rights", "It ended the Civil War"], "options": ["It established the three branches of government", "It created the Bill of Rights", "It says America is free from British control", "It ended the Civil War"], "answer_index": 2}, {"q": "What founding document said the American colonies were **free from Britain**?", "hindi": "किस संस्थापक दस्तावेज़ ने कहा कि अमेरिकी उपनिवेश **ब्रिटेन से स्वतंत्र** हैं?", "correct": "Declaration of Independence", "wrong": ["The U.S. Constitution", "The Federalist Papers", "The Articles of Confederation"], "options": ["The Federalist Papers", "The U.S. Constitution", "Declaration of Independence", "The Articles of Confederation"], "answer_index": 2}, {"q": "Name two important **ideas** from the Declaration of Independence and the U.S. Constitution.", "hindi": "स्वतंत्रता की घोषणा और अमेरिकी संविधान से दो महत्वपूर्ण **विचार** बताइए।", "correct": "Liberty and self-government", "wrong": ["Federalism and capitalism", "Democracy and socialism", "Taxation and trade"], "options": ["Liberty and self-government", "Taxation and trade", "Federalism and capitalism", "Democracy and socialism"], "answer_index": 0}, {"q": "The words **\"Life, Liberty, and the pursuit of Happiness\"** are in what founding document?", "hindi": "**\"जीवन, स्वतंत्रता और खुशी की खोज\"** ये शब्द किस संस्थापक दस्तावेज़ में हैं?", "correct": "Declaration of Independence", "wrong": ["U.S. Constitution", "The Bill of Rights", "The Federalist Papers"], "options": ["The Federalist Papers", "U.S. Constitution", "Declaration of Independence", "The Bill of Rights"], "answer_index": 2}, {"q": "What is the **economic system** of the United States?", "hindi": "संयुक्त राज्य अमेरिका की **आर्थिक प्रणाली** क्या है?", "correct": "Capitalism / Free market economy", "wrong": ["Socialism", "Communism", "Mixed planned economy"], "options": ["Mixed planned economy", "Socialism", "Communism", "Capitalism / Free market economy"], "answer_index": 3}, {"q": "What is the **rule of law**?", "hindi": "**कानून का शासन** क्या है?", "correct": "No one is above the law", "wrong": ["The president controls the courts", "Congress can override any law", "States set their own supreme laws"], "options": ["The president controls the courts", "No one is above the law", "Congress can override any law", "States set their own supreme laws"], "answer_index": 1}, {"q": "Many documents **influenced** the U.S. Constitution. Name one.", "hindi": "कई दस्तावेज़ों ने अमेरिकी संविधान को **प्रभावित** किया। एक का नाम बताइए।", "correct": "The Federalist Papers", "wrong": ["The Emancipation Proclamation", "The Monroe Doctrine", "The Louisiana Purchase Treaty"], "options": ["The Louisiana Purchase Treaty", "The Monroe Doctrine", "The Emancipation Proclamation", "The Federalist Papers"], "answer_index": 3}, {"q": "There are **three branches** of government. Why?", "hindi": "सरकार की **तीन शाखाएं** क्यों हैं?", "correct": "So one part does not become too powerful (checks and balances)", "wrong": ["To increase government efficiency", "To separate state and federal powers", "To allow faster lawmaking"], "options": ["To increase government efficiency", "To allow faster lawmaking", "To separate state and federal powers", "So one part does not become too powerful (checks and balances)"], "answer_index": 3}, {"q": "Name the **three branches** of government.", "hindi": "सरकार की **तीन शाखाओं** के नाम बताइए।", "correct": "Legislative, executive, and judicial", "wrong": ["President, Congress, and military", "Federal, state, and local", "Senate, House, and Supreme Court"], "options": ["Federal, state, and local", "Legislative, executive, and judicial", "Senate, House, and Supreme Court", "President, Congress, and military"], "answer_index": 1}, {"q": "The President is in charge of which **branch** of government?", "hindi": "राष्ट्रपति सरकार की किस **शाखा** के प्रमुख हैं?", "correct": "Executive branch", "wrong": ["Legislative branch", "Judicial branch", "Administrative branch"], "options": ["Legislative branch", "Administrative branch", "Executive branch", "Judicial branch"], "answer_index": 2}, {"q": "What part of the federal government **writes laws**?", "hindi": "संघीय सरकार का कौन सा भाग **कानून बनाता** है?", "correct": "U.S. Congress (Legislative branch)", "wrong": ["The President", "The Supreme Court", "The Cabinet"], "options": ["The Supreme Court", "U.S. Congress (Legislative branch)", "The Cabinet", "The President"], "answer_index": 1}, {"q": "What are the **two parts** of the U.S. Congress?", "hindi": "अमेरिकी कांग्रेस के **दो भाग** कौन से हैं?", "correct": "Senate and House of Representatives", "wrong": ["President and Vice President", "Supreme Court and Congress", "Cabinet and Senate"], "options": ["Senate and House of Representatives", "Cabinet and Senate", "President and Vice President", "Supreme Court and Congress"], "answer_index": 0}, {"q": "Name one **power** of the U.S. Congress.", "hindi": "अमेरिकी कांग्रेस की एक **शक्ति** बताइए।", "correct": "Declares war", "wrong": ["Appoints Supreme Court justices", "Commands the military", "Negotiates foreign treaties alone"], "options": ["Declares war", "Negotiates foreign treaties alone", "Appoints Supreme Court justices", "Commands the military"], "answer_index": 0}, {"q": "How many **U.S. senators** are there?", "hindi": "कितने **अमेरिकी सीनेटर** हैं?", "correct": "One hundred (100)", "wrong": ["Fifty (50)", "Four hundred thirty-five (435)", "Two hundred (200)"], "options": ["Four hundred thirty-five (435)", "Fifty (50)", "One hundred (100)", "Two hundred (200)"], "answer_index": 2}, {"q": "How long is a **term** for a U.S. senator?", "hindi": "अमेरिकी सीनेटर का **कार्यकाल** कितने समय का होता है?", "correct": "Six (6) years", "wrong": ["Two (2) years", "Four (4) years", "Eight (8) years"], "options": ["Two (2) years", "Six (6) years", "Four (4) years", "Eight (8) years"], "answer_index": 1}, {"q": "Who is one of your **state's U.S. senators** now?", "hindi": "अभी आपके **राज्य का एक अमेरिकी सीनेटर** कौन है?", "correct": "Answers will vary by state", "wrong": ["The governor of the state", "The state attorney general", "A member of the House of Representatives"], "options": ["The governor of the state", "A member of the House of Representatives", "The state attorney general", "Answers will vary by state"], "answer_index": 3}, {"q": "How many **voting members** are in the House of Representatives?", "hindi": "प्रतिनिधि सभा में कितने **मतदान सदस्य** हैं?", "correct": "Four hundred thirty-five (435)", "wrong": ["One hundred (100)", "Two hundred (200)", "Five hundred (500)"], "options": ["Two hundred (200)", "One hundred (100)", "Five hundred (500)", "Four hundred thirty-five (435)"], "answer_index": 3}, {"q": "How long is a **term** for a member of the House of Representatives?", "hindi": "प्रतिनिधि सभा के सदस्य का **कार्यकाल** कितने समय का होता है?", "correct": "Two (2) years", "wrong": ["Four (4) years", "Six (6) years", "Eight (8) years"], "options": ["Six (6) years", "Two (2) years", "Four (4) years", "Eight (8) years"], "answer_index": 1}, {"q": "Why do U.S. representatives serve **shorter terms** than U.S. senators?", "hindi": "अमेरिकी प्रतिनिधि सीनेटरों की तुलना में **छोटे कार्यकाल** क्यों सेवा करते हैं?", "correct": "To more closely follow public opinion", "wrong": ["To reduce campaign costs", "To allow more people to serve", "Because the House has more members"], "options": ["To more closely follow public opinion", "To allow more people to serve", "Because the House has more members", "To reduce campaign costs"], "answer_index": 0}, {"q": "How many **senators** does each state have?", "hindi": "प्रत्येक राज्य में कितने **सीनेटर** होते हैं?", "correct": "Two (2)", "wrong": ["One (1)", "Three (3)", "Depends on population"], "options": ["Three (3)", "One (1)", "Depends on population", "Two (2)"], "answer_index": 3}, {"q": "Why does each state have **two senators**?", "hindi": "प्रत्येक राज्य में **दो सीनेटर** क्यों होते हैं?", "correct": "Equal representation / The Great Compromise", "wrong": ["To balance the Electoral College", "Required by the Bill of Rights", "To match the number of governors"], "options": ["Required by the Bill of Rights", "To balance the Electoral College", "To match the number of governors", "Equal representation / The Great Compromise"], "answer_index": 3}, {"q": "Name your **U.S. representative**.", "hindi": "अपने **अमेरिकी प्रतिनिधि** का नाम बताइए।", "correct": "Answers will vary by district", "wrong": ["Your state governor", "Your state attorney general", "Your state secretary of state"], "options": ["Answers will vary by district", "Your state secretary of state", "Your state attorney general", "Your state governor"], "answer_index": 0}, {"q": "What is the name of the **Speaker of the House** now?", "hindi": "अभी **हाउस के अध्यक्ष** का नाम क्या है?", "correct": "Visit uscis.gov/citizenship/testupdates for the current name", "wrong": ["The Vice President", "The Senate Majority Leader", "The Chief Justice"], "options": ["The Chief Justice", "Visit uscis.gov/citizenship/testupdates for the current name", "The Vice President", "The Senate Majority Leader"], "answer_index": 1}, {"q": "Who does a **U.S. senator** represent?", "hindi": "एक **अमेरिकी सीनेटर** किसका प्रतिनिधित्व करता है?", "correct": "Citizens of their state", "wrong": ["Citizens of their district", "All U.S. citizens equally", "Only registered party members"], "options": ["All U.S. citizens equally", "Citizens of their state", "Citizens of their district", "Only registered party members"], "answer_index": 1}, {"q": "Who **elects** U.S. senators?", "hindi": "अमेरिकी सीनेटरों को कौन **चुनता** है?", "correct": "Citizens from their state", "wrong": ["The state legislature", "The Electoral College", "The governor of each state"], "options": ["The governor of each state", "Citizens from their state", "The state legislature", "The Electoral College"], "answer_index": 1}, {"q": "Who does a member of the **House of Representatives** represent?", "hindi": "**प्रतिनिधि सभा** का सदस्य किसका प्रतिनिधित्व करता है?", "correct": "Citizens in their congressional district", "wrong": ["All citizens of their state", "Citizens nationwide", "The party that elected them"], "options": ["The party that elected them", "Citizens nationwide", "All citizens of their state", "Citizens in their congressional district"], "answer_index": 3}, {"q": "Who **elects** members of the House of Representatives?", "hindi": "प्रतिनिधि सभा के सदस्यों को कौन **चुनता** है?", "correct": "Citizens from their congressional district", "wrong": ["All citizens of the state", "The state legislature", "The Electoral College"], "options": ["Citizens from their congressional district", "All citizens of the state", "The Electoral College", "The state legislature"], "answer_index": 0}, {"q": "Some states have **more representatives** than other states. Why?", "hindi": "कुछ राज्यों में अन्य राज्यों की तुलना में **अधिक प्रतिनिधि** क्यों होते हैं?", "correct": "Because of the state population", "wrong": ["Because of the state geographic size", "Because of the state tax contribution", "Because of the state history"], "options": ["Because of the state history", "Because of the state tax contribution", "Because of the state geographic size", "Because of the state population"], "answer_index": 3}, {"q": "The President is elected for how many **years**?", "hindi": "राष्ट्रपति कितने **वर्षों** के लिए चुने जाते हैं?", "correct": "Four (4) years", "wrong": ["Two (2) years", "Six (6) years", "Eight (8) years"], "options": ["Four (4) years", "Six (6) years", "Eight (8) years", "Two (2) years"], "answer_index": 0}, {"q": "The President can serve only **two terms**. Why?", "hindi": "राष्ट्रपति केवल **दो कार्यकाल** क्यों सेवा कर सकते हैं?", "correct": "Because of the 22nd Amendment / To keep the president from becoming too powerful", "wrong": ["Because of the 25th Amendment", "Because of the Bill of Rights", "Because Congress voted on it in 1960"], "options": ["Because of the 25th Amendment", "Because of the 22nd Amendment / To keep the president from becoming too powerful", "Because of the Bill of Rights", "Because Congress voted on it in 1960"], "answer_index": 1}, {"q": "What is the name of the **President** now?", "hindi": "अभी **राष्ट्रपति** का नाम क्या है?", "correct": "Visit uscis.gov/citizenship/testupdates for the current name", "wrong": ["Always George Washington", "Determined by the Supreme Court", "Set by Congress annually"], "options": ["Set by Congress annually", "Always George Washington", "Determined by the Supreme Court", "Visit uscis.gov/citizenship/testupdates for the current name"], "answer_index": 3}, {"q": "What is the name of the **Vice President** now?", "hindi": "अभी **उप-राष्ट्रपति** का नाम क्या है?", "correct": "Visit uscis.gov/citizenship/testupdates for the current name", "wrong": ["The Speaker of the House", "The Senate Majority Leader", "The Secretary of State"], "options": ["The Secretary of State", "The Senate Majority Leader", "The Speaker of the House", "Visit uscis.gov/citizenship/testupdates for the current name"], "answer_index": 3}, {"q": "If the president can **no longer serve**, who becomes president?", "hindi": "यदि राष्ट्रपति **सेवा नहीं कर सकते**, तो राष्ट्रपति कौन बनता है?", "correct": "The Vice President", "wrong": ["The Speaker of the House", "The Secretary of State", "The Chief Justice"], "options": ["The Speaker of the House", "The Secretary of State", "The Vice President", "The Chief Justice"], "answer_index": 2}, {"q": "Name one **power** of the president.", "hindi": "राष्ट्रपति की एक **शक्ति** बताइए।", "correct": "Signs bills into law", "wrong": ["Creates federal laws independently", "Impeaches federal judges", "Approves the federal budget alone"], "options": ["Approves the federal budget alone", "Impeaches federal judges", "Creates federal laws independently", "Signs bills into law"], "answer_index": 3}, {"q": "Who is **Commander in Chief** of the U.S. military?", "hindi": "अमेरिकी सैन्य का **सर्वोच्च कमांडर** कौन है?", "correct": "The President of the United States", "wrong": ["The Secretary of Defense", "The Chairman of the Joint Chiefs of Staff", "The Vice President"], "options": ["The Vice President", "The Chairman of the Joint Chiefs of Staff", "The President of the United States", "The Secretary of Defense"], "answer_index": 2}, {"q": "Who **signs bills** to become laws?", "hindi": "कानून बनने के लिए **विधेयकों पर हस्ताक्षर** कौन करता है?", "correct": "The President of the United States", "wrong": ["The Speaker of the House", "The Chief Justice", "The Senate Majority Leader"], "options": ["The President of the United States", "The Senate Majority Leader", "The Chief Justice", "The Speaker of the House"], "answer_index": 0}, {"q": "Who **vetoes** bills?", "hindi": "विधेयकों को **वीटो** कौन करता है?", "correct": "The President of the United States", "wrong": ["The Supreme Court", "The Senate", "The House of Representatives"], "options": ["The Senate", "The Supreme Court", "The President of the United States", "The House of Representatives"], "answer_index": 2}, {"q": "Who **appoints** federal judges?", "hindi": "संघीय न्यायाधीशों की **नियुक्ति** कौन करता है?", "correct": "The President of the United States", "wrong": ["Congress votes directly", "The Chief Justice recommends and Senate approves", "The Vice President"], "options": ["The Chief Justice recommends and Senate approves", "The President of the United States", "The Vice President", "Congress votes directly"], "answer_index": 1}, {"q": "The executive branch has many parts. Name one.", "hindi": "कार्यपालिका शाखा के कई भाग हैं। **एक का नाम** बताइए।", "correct": "The Cabinet", "wrong": ["The Supreme Court", "The Senate", "The Congressional Budget Office"], "options": ["The Cabinet", "The Congressional Budget Office", "The Senate", "The Supreme Court"], "answer_index": 0}, {"q": "What does the **President's Cabinet** do?", "hindi": "**राष्ट्रपति का मंत्रिमंडल** क्या करता है?", "correct": "Advises the President", "wrong": ["Writes legislation", "Controls the military", "Elects the Vice President"], "options": ["Elects the Vice President", "Advises the President", "Controls the military", "Writes legislation"], "answer_index": 1}, {"q": "What are two **Cabinet-level positions**?", "hindi": "दो **मंत्रिमंडल-स्तरीय पद** कौन से हैं?", "correct": "Secretary of State and Secretary of the Treasury", "wrong": ["Chief Justice and Speaker of the House", "Senate Majority Leader and House Minority Leader", "Director of the FBI and CIA separately"], "options": ["Director of the FBI and CIA separately", "Senate Majority Leader and House Minority Leader", "Secretary of State and Secretary of the Treasury", "Chief Justice and Speaker of the House"], "answer_index": 2}, {"q": "Why is the **Electoral College** important?", "hindi": "**निर्वाचक मंडल** क्यों महत्वपूर्ण है?", "correct": "It decides who is elected president", "wrong": ["It writes the federal budget", "It confirms Supreme Court nominees", "It approves treaties with foreign nations"], "options": ["It decides who is elected president", "It writes the federal budget", "It confirms Supreme Court nominees", "It approves treaties with foreign nations"], "answer_index": 0}, {"q": "What is one part of the **judicial branch**?", "hindi": "**न्यायिक शाखा** का एक भाग क्या है?", "correct": "Supreme Court", "wrong": ["The Cabinet", "The Senate Judiciary Committee", "The Department of Justice"], "options": ["The Department of Justice", "The Senate Judiciary Committee", "The Cabinet", "Supreme Court"], "answer_index": 3}, {"q": "What does the **judicial branch** do?", "hindi": "**न्यायिक शाखा** क्या करती है?", "correct": "Reviews laws and decides if a law goes against the Constitution", "wrong": ["Writes new laws", "Enforces federal laws", "Sets the federal budget"], "options": ["Reviews laws and decides if a law goes against the Constitution", "Writes new laws", "Enforces federal laws", "Sets the federal budget"], "answer_index": 0}, {"q": "What is the **highest court** in the United States?", "hindi": "संयुक्त राज्य अमेरिका में **सर्वोच्च न्यायालय** कौन सा है?", "correct": "Supreme Court", "wrong": ["The Court of Appeals", "The Federal District Court", "The International Court of Justice"], "options": ["The Federal District Court", "Supreme Court", "The International Court of Justice", "The Court of Appeals"], "answer_index": 1}, {"q": "How many **seats** are on the Supreme Court?", "hindi": "सर्वोच्च न्यायालय में कितनी **सीटें** हैं?", "correct": "Nine (9)", "wrong": ["Seven (7)", "Eleven (11)", "Thirteen (13)"], "options": ["Seven (7)", "Nine (9)", "Thirteen (13)", "Eleven (11)"], "answer_index": 1}, {"q": "How many Supreme Court justices are needed to **decide a case**?", "hindi": "**एक मामला तय करने** के लिए कितने सर्वोच्च न्यायालय न्यायाधीश चाहिए?", "correct": "Five (5)", "wrong": ["Three (3)", "Seven (7)", "All nine — unanimous vote required"], "options": ["Five (5)", "All nine — unanimous vote required", "Seven (7)", "Three (3)"], "answer_index": 0}, {"q": "How long do **Supreme Court justices** serve?", "hindi": "**सर्वोच्च न्यायालय के न्यायाधीश** कितने समय तक सेवा करते हैं?", "correct": "For life (lifetime appointment)", "wrong": ["Ten (10) years", "Six (6) years", "Until age 70"], "options": ["Ten (10) years", "For life (lifetime appointment)", "Six (6) years", "Until age 70"], "answer_index": 1}, {"q": "Supreme Court justices serve **for life**. Why?", "hindi": "सर्वोच्च न्यायालय के न्यायाधीश **आजीवन** सेवा क्यों करते हैं?", "correct": "To be independent of politics", "wrong": ["To reward distinguished legal service", "To match the president term", "Because Congress never changed the law"], "options": ["To match the president term", "To be independent of politics", "Because Congress never changed the law", "To reward distinguished legal service"], "answer_index": 1}, {"q": "Who is the **Chief Justice** of the United States now?", "hindi": "अभी संयुक्त राज्य अमेरिका के **मुख्य न्यायाधीश** कौन हैं?", "correct": "Visit uscis.gov/citizenship/testupdates for the current name", "wrong": ["The Vice President of the United States", "Elected by the Senate each term", "Appointed by Congress"], "options": ["Elected by the Senate each term", "Visit uscis.gov/citizenship/testupdates for the current name", "Appointed by Congress", "The Vice President of the United States"], "answer_index": 1}, {"q": "Name one power that is only for the **federal government**.", "hindi": "केवल **संघीय सरकार** की एक शक्ति बताइए।", "correct": "Print paper money / Declare war", "wrong": ["Issue driver licenses", "Establish local police forces", "Approve zoning and land use"], "options": ["Establish local police forces", "Approve zoning and land use", "Print paper money / Declare war", "Issue driver licenses"], "answer_index": 2}, {"q": "Name one power that is only for the **states**.", "hindi": "केवल **राज्यों** की एक शक्ति बताइए।", "correct": "Provide schooling and education", "wrong": ["Print money", "Declare war", "Create an army"], "options": ["Create an army", "Declare war", "Provide schooling and education", "Print money"], "answer_index": 2}, {"q": "What is the purpose of the **10th Amendment**?", "hindi": "**10वें संशोधन** का उद्देश्य क्या है?", "correct": "Powers not given to the federal government belong to the states or to the people", "wrong": ["It abolished slavery", "It granted women the right to vote", "It established freedom of speech"], "options": ["It established freedom of speech", "Powers not given to the federal government belong to the states or to the people", "It granted women the right to vote", "It abolished slavery"], "answer_index": 1}, {"q": "Who is the **governor** of your state now?", "hindi": "अभी आपके राज्य के **राज्यपाल** कौन हैं?", "correct": "Answers will vary by state", "wrong": ["The president appointed representative", "A senator elected statewide", "The state attorney general"], "options": ["Answers will vary by state", "A senator elected statewide", "The president appointed representative", "The state attorney general"], "answer_index": 0}, {"q": "What is the **capital** of your state?", "hindi": "आपके राज्य की **राजधानी** क्या है?", "correct": "Answers will vary by state", "wrong": ["Always the largest city in the state", "Always determined by the federal government", "Washington, D.C."], "options": ["Washington, D.C.", "Answers will vary by state", "Always the largest city in the state", "Always determined by the federal government"], "answer_index": 1}, {"q": "There are four amendments about **who can vote**. Describe one.", "hindi": "**कौन मतदान कर सकता है** इसके बारे में चार संशोधन हैं। एक का वर्णन करें।", "correct": "Citizens eighteen (18) and older can vote", "wrong": ["Only property owners can vote", "Only college graduates can vote", "Voting requires a literacy test"], "options": ["Citizens eighteen (18) and older can vote", "Only college graduates can vote", "Only property owners can vote", "Voting requires a literacy test"], "answer_index": 0}, {"q": "Who can **vote** in federal elections, run for federal office, and serve on a **jury**?", "hindi": "संघीय चुनावों में **मतदान** कौन कर सकता है, संघीय पद के लिए दौड़ सकता है, और **जूरी** में सेवा कर सकता है?", "correct": "U.S. citizens", "wrong": ["Any legal resident", "Any person over 18 living in the U.S.", "Legal permanent residents (green card holders)"], "options": ["U.S. citizens", "Any person over 18 living in the U.S.", "Any legal resident", "Legal permanent residents (green card holders)"], "answer_index": 0}, {"q": "What are three **rights** of everyone living in the United States?", "hindi": "संयुक्त राज्य में रहने वाले सभी लोगों के तीन **अधिकार** क्या हैं?", "correct": "Freedom of speech, freedom of religion, and the right to bear arms", "wrong": ["Right to vote, right to work, right to free housing", "Free healthcare, free education, and free travel", "Right to citizenship, right to a passport, and right to social security"], "options": ["Right to vote, right to work, right to free housing", "Freedom of speech, freedom of religion, and the right to bear arms", "Free healthcare, free education, and free travel", "Right to citizenship, right to a passport, and right to social security"], "answer_index": 1}, {"q": "What do we show **loyalty** to when we say the Pledge of Allegiance?", "hindi": "जब हम वफादारी की शपथ लेते हैं तो हम किसके प्रति **निष्ठा** दिखाते हैं?", "correct": "The United States and the flag", "wrong": ["The President of the United States", "The U.S. military", "The Constitution only"], "options": ["The U.S. military", "The United States and the flag", "The Constitution only", "The President of the United States"], "answer_index": 1}, {"q": "Name two **promises** that new citizens make in the Oath of Allegiance.", "hindi": "नागरिकता की शपथ में नए नागरिक दो **वादे** क्या करते हैं?", "correct": "Give up loyalty to other countries and defend the Constitution", "wrong": ["Learn English and pay higher taxes", "Serve in the military and forfeit foreign property", "Move to the United States permanently and renounce all foreign currency"], "options": ["Give up loyalty to other countries and defend the Constitution", "Move to the United States permanently and renounce all foreign currency", "Learn English and pay higher taxes", "Serve in the military and forfeit foreign property"], "answer_index": 0}, {"q": "How can people become **United States citizens**?", "hindi": "लोग **अमेरिकी नागरिक** कैसे बन सकते हैं?", "correct": "Born in the United States or through naturalization", "wrong": ["By living in the U.S. for 5 years automatically", "By marrying a U.S. citizen automatically", "By passing a government job exam"], "options": ["By living in the U.S. for 5 years automatically", "By passing a government job exam", "By marrying a U.S. citizen automatically", "Born in the United States or through naturalization"], "answer_index": 3}, {"q": "What are two examples of **civic participation**?", "hindi": "**नागरिक भागीदारी** के दो उदाहरण क्या हैं?", "correct": "Vote and join a civic group", "wrong": ["Pay rent and own a business", "Drive and attend school", "Watch the news and pay taxes"], "options": ["Vote and join a civic group", "Drive and attend school", "Pay rent and own a business", "Watch the news and pay taxes"], "answer_index": 0}, {"q": "What is one way Americans can **serve their country**?", "hindi": "अमेरिकी अपने **देश की सेवा** करने का एक तरीका क्या है?", "correct": "Serve in the military", "wrong": ["Travel abroad as a tourist", "Invest in the stock market", "Start a business"], "options": ["Travel abroad as a tourist", "Invest in the stock market", "Serve in the military", "Start a business"], "answer_index": 2}, {"q": "Why is it important to pay **federal taxes**?", "hindi": "**संघीय कर** चुकाना क्यों महत्वपूर्ण है?", "correct": "Required by law and funds the federal government", "wrong": ["It is optional but encouraged", "It only funds local services", "It was established by the 1st Amendment"], "options": ["It only funds local services", "It was established by the 1st Amendment", "Required by law and funds the federal government", "It is optional but encouraged"], "answer_index": 2}, {"q": "Why is it important for all men 18–25 to register for **Selective Service**?", "hindi": "18-25 आयु के सभी पुरुषों के लिए **सेलेक्टिव सर्विस** में पंजीकरण क्यों महत्वपूर्ण है?", "correct": "Required by law / Makes the draft fair, if needed", "wrong": ["It automatically enrolls them in the military", "It gives them the right to vote", "It qualifies them for federal jobs"], "options": ["It gives them the right to vote", "Required by law / Makes the draft fair, if needed", "It automatically enrolls them in the military", "It qualifies them for federal jobs"], "answer_index": 1}, {"q": "The colonists came to America for many reasons. Name one.", "hindi": "उपनिवेशवादी कई कारणों से अमेरिका आए। **एक कारण** बताइए।", "correct": "Religious freedom", "wrong": ["To conquer Native Americans", "To establish a monarchy", "To build trade routes to Asia"], "options": ["To establish a monarchy", "To conquer Native Americans", "Religious freedom", "To build trade routes to Asia"], "answer_index": 2}, {"q": "Who lived in America **before the Europeans** arrived?", "hindi": "**यूरोपीयों के आने से पहले** अमेरिका में कौन रहता था?", "correct": "American Indians / Native Americans", "wrong": ["African settlers", "Asian explorers", "South American migrants"], "options": ["African settlers", "South American migrants", "American Indians / Native Americans", "Asian explorers"], "answer_index": 2}, {"q": "What group of people was taken and **sold as slaves**?", "hindi": "किस समूह के लोगों को लेकर **दासों के रूप में बेचा** गया?", "correct": "Africans / People from Africa", "wrong": ["Native Americans only", "Irish immigrants", "Asian laborers"], "options": ["Irish immigrants", "Africans / People from Africa", "Native Americans only", "Asian laborers"], "answer_index": 1}, {"q": "What war did the Americans fight to win **independence from Britain**?", "hindi": "अमेरिकियों ने **ब्रिटेन से स्वतंत्रता** पाने के लिए कौन सा युद्ध लड़ा?", "correct": "The American Revolution / Revolutionary War", "wrong": ["The Civil War", "The War of 1812", "The French and Indian War"], "options": ["The Civil War", "The War of 1812", "The French and Indian War", "The American Revolution / Revolutionary War"], "answer_index": 3}, {"q": "Name one reason why the Americans declared **independence** from Britain.", "hindi": "अमेरिकियों ने ब्रिटेन से **स्वतंत्रता** क्यों घोषित की, एक कारण बताइए।", "correct": "Taxation without representation", "wrong": ["Britain refused to trade with the colonies", "Britain invaded France", "The colonies wanted to join Canada"], "options": ["Britain refused to trade with the colonies", "Taxation without representation", "The colonies wanted to join Canada", "Britain invaded France"], "answer_index": 1}, {"q": "Who **wrote** the Declaration of Independence?", "hindi": "स्वतंत्रता की घोषणा किसने **लिखी**?", "correct": "Thomas Jefferson", "wrong": ["Benjamin Franklin", "George Washington", "Alexander Hamilton"], "options": ["George Washington", "Thomas Jefferson", "Benjamin Franklin", "Alexander Hamilton"], "answer_index": 1}, {"q": "When was the Declaration of Independence **adopted**?", "hindi": "स्वतंत्रता की घोषणा कब **अपनाई** गई?", "correct": "July 4, 1776", "wrong": ["July 4, 1783", "September 17, 1787", "March 4, 1789"], "options": ["July 4, 1783", "July 4, 1776", "March 4, 1789", "September 17, 1787"], "answer_index": 1}, {"q": "The American Revolution had many important events. Name one.", "hindi": "अमेरिकी क्रांति में कई महत्वपूर्ण घटनाएं हुईं। **एक का नाम** बताइए।", "correct": "Battle of Saratoga", "wrong": ["Battle of Gettysburg", "Battle of Midway", "Battle of Bull Run"], "options": ["Battle of Gettysburg", "Battle of Saratoga", "Battle of Midway", "Battle of Bull Run"], "answer_index": 1}, {"q": "There were **13 original states**. Name five.", "hindi": "**13 मूल राज्य** थे। पांच के नाम बताइए।", "correct": "Virginia, Massachusetts, New York, Pennsylvania, and Georgia", "wrong": ["Florida, Texas, California, Ohio, and Michigan", "Maine, Vermont, Kentucky, Tennessee, and Alabama", "Louisiana, Mississippi, Arkansas, Missouri, and Indiana"], "options": ["Florida, Texas, California, Ohio, and Michigan", "Virginia, Massachusetts, New York, Pennsylvania, and Georgia", "Louisiana, Mississippi, Arkansas, Missouri, and Indiana", "Maine, Vermont, Kentucky, Tennessee, and Alabama"], "answer_index": 1}, {"q": "What founding document was written in **1787**?", "hindi": "**1787** में कौन सा संस्थापक दस्तावेज़ लिखा गया था?", "correct": "The U.S. Constitution", "wrong": ["The Declaration of Independence", "The Bill of Rights", "The Federalist Papers"], "options": ["The Federalist Papers", "The Declaration of Independence", "The Bill of Rights", "The U.S. Constitution"], "answer_index": 3}, {"q": "The Federalist Papers supported the U.S. Constitution. Name one of the **writers**.", "hindi": "फेडरलिस्ट पेपर्स ने अमेरिकी संविधान का समर्थन किया। एक **लेखक** का नाम बताइए।", "correct": "James Madison", "wrong": ["Thomas Jefferson", "John Adams", "Patrick Henry"], "options": ["James Madison", "Thomas Jefferson", "Patrick Henry", "John Adams"], "answer_index": 0}, {"q": "Why were the **Federalist Papers** important?", "hindi": "**फेडरलिस्ट पेपर्स** क्यों महत्वपूर्ण थे?", "correct": "They helped people understand and supported passing the U.S. Constitution", "wrong": ["They proposed independence from Britain", "They established the Bill of Rights", "They created the Electoral College"], "options": ["They created the Electoral College", "They established the Bill of Rights", "They helped people understand and supported passing the U.S. Constitution", "They proposed independence from Britain"], "answer_index": 2}, {"q": "**Benjamin Franklin** is famous for many things. Name one.", "hindi": "**बेंजामिन फ्रैंकलिन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "First Postmaster General of the United States", "wrong": ["First Secretary of the Treasury", "Wrote the Constitution", "Led the Continental Army"], "options": ["Wrote the Constitution", "First Secretary of the Treasury", "First Postmaster General of the United States", "Led the Continental Army"], "answer_index": 2}, {"q": "**George Washington** is famous for many things. Name one.", "hindi": "**जॉर्ज वाशिंगटन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "Father of Our Country / First president of the United States", "wrong": ["Wrote the Declaration of Independence", "Authored the Federalist Papers", "Signed the Emancipation Proclamation"], "options": ["Signed the Emancipation Proclamation", "Authored the Federalist Papers", "Wrote the Declaration of Independence", "Father of Our Country / First president of the United States"], "answer_index": 3}, {"q": "**Thomas Jefferson** is famous for many things. Name one.", "hindi": "**थॉमस जेफरसन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "Writer of the Declaration of Independence", "wrong": ["First Secretary of the Treasury", "Led the Continental Army", "Authored the Federalist Papers"], "options": ["Writer of the Declaration of Independence", "First Secretary of the Treasury", "Led the Continental Army", "Authored the Federalist Papers"], "answer_index": 0}, {"q": "**James Madison** is famous for many things. Name one.", "hindi": "**जेम्स मैडिसन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "Father of the Constitution", "wrong": ["First president of the United States", "Wrote the Declaration of Independence", "Led the Continental Army"], "options": ["Father of the Constitution", "Led the Continental Army", "First president of the United States", "Wrote the Declaration of Independence"], "answer_index": 0}, {"q": "**Alexander Hamilton** is famous for many things. Name one.", "hindi": "**अलेक्जेंडर हैमिल्टन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "First Secretary of the Treasury", "wrong": ["Third president of the United States", "Father of Our Country", "Signed the Emancipation Proclamation"], "options": ["Third president of the United States", "First Secretary of the Treasury", "Father of Our Country", "Signed the Emancipation Proclamation"], "answer_index": 1}, {"q": "What territory did the United States buy from **France** in 1803?", "hindi": "1803 में संयुक्त राज्य अमेरिका ने **फ्रांस** से कौन सा क्षेत्र खरीदा?", "correct": "Louisiana Territory", "wrong": ["Florida Territory", "Texas Territory", "Alaska Territory"], "options": ["Louisiana Territory", "Florida Territory", "Texas Territory", "Alaska Territory"], "answer_index": 0}, {"q": "Name one war fought by the United States in the **1800s**.", "hindi": "**1800 के दशक** में अमेरिका द्वारा लड़े गए एक युद्ध का नाम बताइए।", "correct": "The Civil War", "wrong": ["World War I", "World War II", "The Korean War"], "options": ["The Korean War", "World War II", "World War I", "The Civil War"], "answer_index": 3}, {"q": "Name the U.S. war between the **North and the South**.", "hindi": "**उत्तर और दक्षिण** के बीच अमेरिकी युद्ध का नाम बताइए।", "correct": "The Civil War", "wrong": ["The Revolutionary War", "The War of 1812", "The Mexican-American War"], "options": ["The Mexican-American War", "The Civil War", "The Revolutionary War", "The War of 1812"], "answer_index": 1}, {"q": "The Civil War had many important events. Name one.", "hindi": "गृहयुद्ध में कई महत्वपूर्ण घटनाएं हुईं। **एक का नाम** बताइए।", "correct": "The Emancipation Proclamation", "wrong": ["The Boston Tea Party", "The Battle of Bunker Hill", "The signing of the Constitution"], "options": ["The Emancipation Proclamation", "The Boston Tea Party", "The Battle of Bunker Hill", "The signing of the Constitution"], "answer_index": 0}, {"q": "**Abraham Lincoln** is famous for many things. Name one.", "hindi": "**अब्राहम लिंकन** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "Freed the slaves (Emancipation Proclamation)", "wrong": ["Wrote the Declaration of Independence", "Led the Continental Army", "Established the Federal Reserve"], "options": ["Established the Federal Reserve", "Wrote the Declaration of Independence", "Led the Continental Army", "Freed the slaves (Emancipation Proclamation)"], "answer_index": 3}, {"q": "What did the **Emancipation Proclamation** do?", "hindi": "**मुक्ति उद्घोषणा** ने क्या किया?", "correct": "Freed slaves in the Confederate states", "wrong": ["Gave women the right to vote", "Ended the Civil War", "Established the 14th Amendment"], "options": ["Ended the Civil War", "Freed slaves in the Confederate states", "Gave women the right to vote", "Established the 14th Amendment"], "answer_index": 1}, {"q": "What U.S. war **ended slavery**?", "hindi": "किस अमेरिकी युद्ध ने **दासता समाप्त** की?", "correct": "The Civil War", "wrong": ["The Revolutionary War", "The War of 1812", "World War I"], "options": ["The War of 1812", "World War I", "The Civil War", "The Revolutionary War"], "answer_index": 2}, {"q": "What amendment says all persons born or **naturalized** in the United States are U.S. citizens?", "hindi": "कौन सा संशोधन कहता है कि अमेरिका में जन्मे या **नागरिकृत** सभी व्यक्ति अमेरिकी नागरिक हैं?", "correct": "14th Amendment", "wrong": ["13th Amendment", "15th Amendment", "19th Amendment"], "options": ["13th Amendment", "19th Amendment", "14th Amendment", "15th Amendment"], "answer_index": 2}, {"q": "When did **all men** get the right to vote?", "hindi": "**सभी पुरुषों** को मतदान का अधिकार कब मिला?", "correct": "After the Civil War / 15th Amendment (1870)", "wrong": ["After the Revolutionary War (1783)", "19th Amendment (1920)", "After World War I (1919)"], "options": ["After World War I (1919)", "After the Civil War / 15th Amendment (1870)", "19th Amendment (1920)", "After the Revolutionary War (1783)"], "answer_index": 1}, {"q": "Name one leader of the **women's rights movement** in the 1800s.", "hindi": "1800 के दशक में **महिला अधिकार आंदोलन** के एक नेता का नाम बताइए।", "correct": "Susan B. Anthony", "wrong": ["Rosa Parks", "Hillary Clinton", "Eleanor Roosevelt"], "options": ["Eleanor Roosevelt", "Rosa Parks", "Hillary Clinton", "Susan B. Anthony"], "answer_index": 3}, {"q": "Name one war fought by the United States in the **1900s**.", "hindi": "**1900 के दशक** में अमेरिका द्वारा लड़े गए एक युद्ध का नाम बताइए।", "correct": "World War II", "wrong": ["The Civil War", "The Revolutionary War", "The War of 1812"], "options": ["The War of 1812", "The Revolutionary War", "World War II", "The Civil War"], "answer_index": 2}, {"q": "Why did the United States enter **World War I**?", "hindi": "संयुक्त राज्य अमेरिका **प्रथम विश्व युद्ध** में क्यों शामिल हुआ?", "correct": "Because Germany attacked U.S. civilian ships", "wrong": ["Because Japan bombed Pearl Harbor", "To stop communism in Europe", "To support the Central Powers"], "options": ["Because Japan bombed Pearl Harbor", "Because Germany attacked U.S. civilian ships", "To support the Central Powers", "To stop communism in Europe"], "answer_index": 1}, {"q": "When did **all women** get the right to vote?", "hindi": "**सभी महिलाओं** को मतदान का अधिकार कब मिला?", "correct": "1920 / 19th Amendment", "wrong": ["1870 / 15th Amendment", "1865 / 13th Amendment", "1945 / After World War II"], "options": ["1920 / 19th Amendment", "1945 / After World War II", "1870 / 15th Amendment", "1865 / 13th Amendment"], "answer_index": 0}, {"q": "What was the **Great Depression**?", "hindi": "**महामंदी** क्या थी?", "correct": "The longest economic recession in modern history", "wrong": ["A period of extreme drought in the 1930s", "A major military conflict in Europe", "A cultural revolution in the 1920s"], "options": ["A cultural revolution in the 1920s", "A major military conflict in Europe", "The longest economic recession in modern history", "A period of extreme drought in the 1930s"], "answer_index": 2}, {"q": "When did the **Great Depression** start?", "hindi": "**महामंदी** कब शुरू हुई?", "correct": "Stock market crash of 1929", "wrong": ["End of World War I in 1918", "Start of World War II in 1939", "After the Civil War in 1865"], "options": ["After the Civil War in 1865", "End of World War I in 1918", "Stock market crash of 1929", "Start of World War II in 1939"], "answer_index": 2}, {"q": "Who was president during the **Great Depression and World War II**?", "hindi": "**महामंदी और द्वितीय विश्व युद्ध** के दौरान राष्ट्रपति कौन था?", "correct": "Franklin Roosevelt", "wrong": ["Herbert Hoover", "Harry Truman", "Dwight Eisenhower"], "options": ["Herbert Hoover", "Dwight Eisenhower", "Harry Truman", "Franklin Roosevelt"], "answer_index": 3}, {"q": "Why did the United States enter **World War II**?", "hindi": "संयुक्त राज्य अमेरिका **द्वितीय विश्व युद्ध** में क्यों शामिल हुआ?", "correct": "Japan bombed Pearl Harbor", "wrong": ["Germany invaded France", "The Soviet Union asked for help", "Britain was threatened by Italy"], "options": ["Japan bombed Pearl Harbor", "The Soviet Union asked for help", "Germany invaded France", "Britain was threatened by Italy"], "answer_index": 0}, {"q": "**Dwight Eisenhower** is famous for many things. Name one.", "hindi": "**ड्वाइट आइजनहावर** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "General during World War II", "wrong": ["Led the Union Army in the Civil War", "Wrote the New Deal legislation", "Founded NASA"], "options": ["Wrote the New Deal legislation", "General during World War II", "Founded NASA", "Led the Union Army in the Civil War"], "answer_index": 1}, {"q": "Who was the United States main rival during the **Cold War**?", "hindi": "**शीत युद्ध** के दौरान संयुक्त राज्य अमेरिका का मुख्य प्रतिद्वंद्वी कौन था?", "correct": "The Soviet Union (USSR)", "wrong": ["China", "Cuba", "North Korea"], "options": ["China", "North Korea", "Cuba", "The Soviet Union (USSR)"], "answer_index": 3}, {"q": "During the Cold War, what was one main concern of the United States?", "hindi": "शीत युद्ध के दौरान संयुक्त राज्य की एक मुख्य **चिंता** क्या थी?", "correct": "Communism", "wrong": ["Colonialism", "Fascism", "Islamic extremism"], "options": ["Communism", "Fascism", "Islamic extremism", "Colonialism"], "answer_index": 0}, {"q": "Why did the United States enter the **Korean War**?", "hindi": "संयुक्त राज्य अमेरिका **कोरियाई युद्ध** में क्यों शामिल हुआ?", "correct": "To stop the spread of communism", "wrong": ["North Korea attacked a U.S. base", "To protect South Korea oil reserves", "As part of a UN peacekeeping mission"], "options": ["To protect South Korea oil reserves", "As part of a UN peacekeeping mission", "North Korea attacked a U.S. base", "To stop the spread of communism"], "answer_index": 3}, {"q": "Why did the United States enter the **Vietnam War**?", "hindi": "संयुक्त राज्य अमेरिका **वियतनाम युद्ध** में क्यों शामिल हुआ?", "correct": "To stop the spread of communism", "wrong": ["To protect trade routes in Southeast Asia", "Because Vietnam attacked Guam", "To support China policy in Asia"], "options": ["To support China policy in Asia", "To stop the spread of communism", "To protect trade routes in Southeast Asia", "Because Vietnam attacked Guam"], "answer_index": 1}, {"q": "What did the **civil rights movement** do?", "hindi": "**नागरिक अधिकार आंदोलन** ने क्या किया?", "correct": "Fought to end racial discrimination", "wrong": ["Fought to end the Vietnam War", "Established women suffrage", "Created Social Security"], "options": ["Created Social Security", "Fought to end racial discrimination", "Established women suffrage", "Fought to end the Vietnam War"], "answer_index": 1}, {"q": "**Martin Luther King, Jr.** is famous for many things. Name one.", "hindi": "**मार्टिन लूथर किंग जूनियर** कई चीजों के लिए प्रसिद्ध हैं। एक बताइए।", "correct": "Fought for civil rights / Worked for equality for all Americans", "wrong": ["Led the women rights movement", "Founded the NAACP", "Ran for president in 1960"], "options": ["Founded the NAACP", "Fought for civil rights / Worked for equality for all Americans", "Led the women rights movement", "Ran for president in 1960"], "answer_index": 1}, {"q": "Why did the United States enter the **Persian Gulf War**?", "hindi": "संयुक्त राज्य अमेरिका **फारस की खाड़ी युद्ध** में क्यों शामिल हुआ?", "correct": "To force the Iraqi military from Kuwait", "wrong": ["To protect Saudi Arabia oil fields", "Because Iraq attacked U.S. troops in Turkey", "To remove Saddam Hussein from power"], "options": ["Because Iraq attacked U.S. troops in Turkey", "To remove Saddam Hussein from power", "To protect Saudi Arabia oil fields", "To force the Iraqi military from Kuwait"], "answer_index": 3}, {"q": "What major event happened on **September 11, 2001**?", "hindi": "**11 सितंबर 2001** को क्या बड़ी घटना हुई?", "correct": "Terrorists attacked the United States", "wrong": ["The U.S. declared war on Iraq", "A major hurricane hit New York City", "The stock market crashed"], "options": ["The U.S. declared war on Iraq", "The stock market crashed", "Terrorists attacked the United States", "A major hurricane hit New York City"], "answer_index": 2}, {"q": "Name one U.S. military conflict **after September 11, 2001**.", "hindi": "**11 सितंबर 2001 के बाद** एक अमेरिकी सैन्य संघर्ष का नाम बताइए।", "correct": "War in Afghanistan", "wrong": ["The Korean War", "The Vietnam War", "The Persian Gulf War"], "options": ["The Persian Gulf War", "The Vietnam War", "War in Afghanistan", "The Korean War"], "answer_index": 2}, {"q": "Name one **American Indian tribe** in the United States.", "hindi": "संयुक्त राज्य में एक **अमेरिकी भारतीय जनजाति** का नाम बताइए।", "correct": "Cherokee", "wrong": ["Aztec", "Maya", "Inca"], "options": ["Maya", "Aztec", "Inca", "Cherokee"], "answer_index": 3}, {"q": "Name one example of an **American innovation**.", "hindi": "एक **अमेरिकी नवाचार** का उदाहरण बताइए।", "correct": "The airplane", "wrong": ["The printing press", "The steam engine", "The telescope"], "options": ["The airplane", "The telescope", "The printing press", "The steam engine"], "answer_index": 0}, {"q": "What is the **capital** of the United States?", "hindi": "संयुक्त राज्य अमेरिका की **राजधानी** क्या है?", "correct": "Washington, D.C.", "wrong": ["New York City", "Philadelphia", "Boston"], "options": ["Boston", "Philadelphia", "New York City", "Washington, D.C."], "answer_index": 3}, {"q": "Where is the **Statue of Liberty**?", "hindi": "**स्टैच्यू ऑफ लिबर्टी** कहाँ है?", "correct": "New York Harbor / Liberty Island", "wrong": ["Washington, D.C.", "Boston Harbor", "Philadelphia"], "options": ["Boston Harbor", "New York Harbor / Liberty Island", "Washington, D.C.", "Philadelphia"], "answer_index": 1}, {"q": "Why does the flag have **13 stripes**?", "hindi": "झंडे में **13 धारियां** क्यों हैं?", "correct": "Because there were 13 original colonies", "wrong": ["To honor the 13 founding fathers", "Because there are 13 branches of government", "To represent the 13 years of the Revolution"], "options": ["To honor the 13 founding fathers", "To represent the 13 years of the Revolution", "Because there were 13 original colonies", "Because there are 13 branches of government"], "answer_index": 2}, {"q": "Why does the flag have **50 stars**?", "hindi": "झंडे में **50 तारे** क्यों हैं?", "correct": "Because there are 50 states", "wrong": ["To represent the 50 years of independence", "To honor 50 founding families", "To represent 50 national holidays"], "options": ["To represent the 50 years of independence", "Because there are 50 states", "To represent 50 national holidays", "To honor 50 founding families"], "answer_index": 1}, {"q": "What is the name of the **national anthem**?", "hindi": "**राष्ट्रगान** का नाम क्या है?", "correct": "The Star-Spangled Banner", "wrong": ["America the Beautiful", "God Bless America", "My Country Tis of Thee"], "options": ["America the Beautiful", "The Star-Spangled Banner", "My Country Tis of Thee", "God Bless America"], "answer_index": 1}, {"q": "The first motto was **E Pluribus Unum**. What does that mean?", "hindi": "पहला आदर्श वाक्य **ई प्लुरिबस उनम** था। इसका क्या अर्थ है?", "correct": "Out of many, one", "wrong": ["In God we trust", "Land of the free", "Liberty and justice for all"], "options": ["Land of the free", "In God we trust", "Out of many, one", "Liberty and justice for all"], "answer_index": 2}, {"q": "What is **Independence Day**?", "hindi": "**स्वतंत्रता दिवस** क्या है?", "correct": "A holiday to celebrate U.S. independence from Britain", "wrong": ["A holiday to honor U.S. military veterans", "A holiday to honor soldiers who died in service", "A holiday celebrating the Constitution"], "options": ["A holiday to honor U.S. military veterans", "A holiday celebrating the Constitution", "A holiday to celebrate U.S. independence from Britain", "A holiday to honor soldiers who died in service"], "answer_index": 2}, {"q": "Name three **national U.S. holidays**.", "hindi": "तीन **राष्ट्रीय अमेरिकी छुट्टियों** के नाम बताइए।", "correct": "Independence Day, Thanksgiving Day, and Memorial Day", "wrong": ["Easter, Halloween, and Valentine Day", "Mother Day, Father Day, and Groundhog Day", "Tax Day, Election Day, and St. Patrick Day"], "options": ["Mother Day, Father Day, and Groundhog Day", "Independence Day, Thanksgiving Day, and Memorial Day", "Easter, Halloween, and Valentine Day", "Tax Day, Election Day, and St. Patrick Day"], "answer_index": 1}, {"q": "What is **Memorial Day**?", "hindi": "**मेमोरियल डे** क्या है?", "correct": "A holiday to honor soldiers who died in military service", "wrong": ["A holiday to celebrate U.S. independence", "A holiday to honor all military veterans", "A holiday to remember civil rights leaders"], "options": ["A holiday to celebrate U.S. independence", "A holiday to remember civil rights leaders", "A holiday to honor soldiers who died in military service", "A holiday to honor all military veterans"], "answer_index": 2}, {"q": "What is **Veterans Day**?", "hindi": "**वेटेरन्स डे** क्या है?", "correct": "A holiday to honor people who have served in the U.S. military", "wrong": ["A holiday to honor soldiers who died in battle", "A holiday to celebrate U.S. independence", "A holiday to remember the founding fathers"], "options": ["A holiday to remember the founding fathers", "A holiday to honor people who have served in the U.S. military", "A holiday to celebrate U.S. independence", "A holiday to honor soldiers who died in battle"], "answer_index": 1}];
+
+// ── CONSTANTS ──
+var TOTAL = 20;
+var PASS  = 12;
+var BALLOON_COLORS = ["#FF6B6B","#FFD93D","#6BCB77","#4D96FF","#FF6FC8","#FF9A3C","#A0C4FF","#BDB2FF","#FFC6FF","#CAFFBF","#FF9F43","#48DBFB"];
+var PEP_TALKS = [
+  "Don't give up \u2014 you've got this! \uD83D\uDCAA",
+  "Almost! Keep pushing forward! \uD83C\uDF1F",
+  "Every mistake is a step closer to mastery! \uD83D\uDCDA",
+  "You're doing great \u2014 one wrong answer won't stop you! \uD83D\uDE80",
+  "Stay strong! The next one is yours! \uD83C\uDFAF",
+  "Learning takes courage \u2014 keep going! \uD83E\uDD81",
+  "Shake it off and keep moving! \uD83C\uDFB6",
+  "Champions learn from every attempt! \uD83C\uDFC6",
+  "That one was tricky \u2014 you've got the next one! \uD83E\uDDE0",
+  "Believe in yourself! You can absolutely do this! \u2728",
+  "Rome wasn't built in a day \u2014 keep studying! \uD83C\uDFDB\uFE0F",
+  "You're braver than you think! Try again! \uD83D\uDE4C"
+];
+
+// ── STATE ──
+var selected = [];
+var cur = 0;
+var correctCount = 0;
+var wrongCount   = 0;
+var quizDone     = false;
+var synth = window.speechSynthesis || null;
+
+// ── HELPERS ──
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function plainText(str) {
+  return str.replace(/\*\*(.+?)\*\*/g, '$1');
+}
+function bold(str) {
+  return esc(str).replace(/\*\*(.+?)\*\*/g, function(m, t){ return '<strong>' + t + '</strong>'; });
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── QUIZ CONTROL ──
+function startQuiz() {
+  selected = shuffle(Q).slice(0, TOTAL);
+  cur = 0; correctCount = 0; wrongCount = 0; quizDone = false;
+  document.getElementById('start-screen').style.display  = 'none';
+  document.getElementById('result-screen').style.display = 'none';
+  var qs = document.getElementById('quiz-screen');
+  qs.style.display = 'flex';
+  render();
+}
+
+function restartQuiz() {
+  if (synth) synth.cancel();
+  document.getElementById('result-screen').style.display = 'none';
+  startQuiz();
+}
+
+function render() {
+  var q = selected[cur];
+  var letters = ['A','B','C','D'];
+
+  // Scorebar
+  var answered = correctCount + wrongCount;
+  var pct = Math.round(answered / TOTAL * 100);
+  document.getElementById('sc').textContent = correctCount;
+  document.getElementById('sw').textContent = wrongCount;
+  document.getElementById('sn').textContent = Math.max(0, PASS - correctCount);
+  document.getElementById('sq').textContent = cur + 1;
+  document.getElementById('prog-text').textContent  = 'Question ' + (cur + 1) + ' of ' + TOTAL;
+  document.getElementById('prog-pct').textContent   = pct + '% complete';
+  document.getElementById('prog-fill').style.width  = pct + '%';
+
+  // Card
+  document.getElementById('question-card').className = 'question-card';
+  document.getElementById('q-num-label').textContent = 'Question ' + (cur + 1) + ' of ' + TOTAL;
+  document.getElementById('q-text').innerHTML = bold(q.q);
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('next-btn').className = 'next-btn';
+
+  // Options
+  var html = '';
+  for (var i = 0; i < q.options.length; i++) {
+    html += '<button class="opt" onclick="pick(' + i + ')"><span class="badge">' + letters[i] + '</span>' + esc(q.options[i]) + '</button>';
+  }
+  document.getElementById('options').innerHTML = html;
+
+  // Auto-read question
+  setTimeout(function(){ speak(plainText(q.q)); }, 450);
+}
+
+function pick(optIdx) {
+  if (quizDone) return;
+  var q = selected[cur];
+  var isCorrect = (optIdx === q.answer_index);
+
+  // Lock options
+  var opts = document.querySelectorAll('.opt');
+  opts.forEach(function(o, i) {
+    o.disabled = true;
+    if (i === q.answer_index) o.classList.add('opt-correct');
+    else if (i === optIdx && !isCorrect) o.classList.add('opt-wrong');
+  });
+
+  var fb   = document.getElementById('feedback');
+  var card = document.getElementById('question-card');
+
+  if (isCorrect) {
+    correctCount++;
+    card.className = 'question-card correct';
+    fb.className = 'feedback show fb-correct';
+    fb.innerHTML = '&#10003; <span>Correct! Well done!</span>';
+    launchBalloons(false);
+    setTimeout(function(){ speak('Correct! Well done!'); }, 100);
+  } else {
+    wrongCount++;
+    card.className = 'question-card wrong';
+    fb.className = 'feedback show fb-wrong';
+    fb.innerHTML = '&#10007; <span>Incorrect. Correct answer: <strong>' + esc(q.options[q.answer_index]) + '</strong></span>';
+    showPepTalk();
+    setTimeout(function(){ speak('Incorrect. The correct answer is: ' + plainText(q.options[q.answer_index])); }, 100);
+  }
+
+  // Early end: passed
+  if (correctCount >= PASS) {
+    quizDone = true;
+    setTimeout(function(){ showResult('pass', 'early'); }, 2000);
+    return;
+  }
+  // Early end: mathematically impossible to pass
+  var remaining = TOTAL - (correctCount + wrongCount);
+  if (correctCount + remaining < PASS) {
+    quizDone = true;
+    setTimeout(function(){ showResult('fail', 'early'); }, 2000);
+    return;
+  }
+  // Last question
+  if (cur >= TOTAL - 1) {
+    quizDone = true;
+    setTimeout(function(){ showResult(correctCount >= PASS ? 'pass' : 'fail', 'full'); }, 2000);
+    return;
+  }
+
+  document.getElementById('next-btn').className = 'next-btn show';
+}
+
+function nextQ() {
+  if (synth) synth.cancel();
+  cur++;
+  render();
+}
+
+// ── AUDIO ──
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang  = 'en-US';
+  u.rate  = 0.88;
+  u.pitch = 1.0;
+  var btn = document.getElementById('audio-btn');
+  if (btn) btn.classList.add('speaking');
+  u.onend  = function() { if (btn) btn.classList.remove('speaking'); };
+  u.onerror= function() { if (btn) btn.classList.remove('speaking'); };
+  synth.speak(u);
+}
+
+function replay() {
+  var q = selected[cur];
+  var txt = plainText(q.q) +
+    '. Option A: ' + q.options[0] +
+    '. Option B: ' + q.options[1] +
+    '. Option C: ' + q.options[2] +
+    '. Option D: ' + q.options[3] + '.';
+  speak(txt);
+}
+
+// ── BALLOONS ──
+function launchBalloons(big) {
+  var container = document.getElementById('balloon-container');
+  var count = big ? 30 : (14 + Math.floor(Math.random() * 8));
+  for (var i = 0; i < count; i++) {
+    (function(delay) {
+      setTimeout(function() {
+        var b = document.createElement('div');
+        b.className = 'balloon';
+        var size  = 38 + Math.random() * 32;
+        var color = BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)];
+        var left  = 3 + Math.random() * 94;
+        var dur   = 2.4 + Math.random() * 2.2;
+        var tilt  = (Math.random() - 0.5) * 32;
+        b.style.cssText = 'width:' + size + 'px;height:' + (size * 1.22) + 'px;background:' + color +
+          ';left:' + left + '%;--dur:' + dur + 's;--tilt:' + tilt + 'deg;';
+        container.appendChild(b);
+        // Trigger animation next frame
+        requestAnimationFrame(function(){ b.classList.add('anim'); });
+        setTimeout(function(){ if (b.parentNode) b.remove(); }, (dur + 0.2) * 1000);
+      }, delay);
+    })(i * 110);
+  }
+}
+
+// ── PEP TALK ──
+function showPepTalk() {
+  var toast = document.getElementById('pep-toast');
+  var msg = PEP_TALKS[Math.floor(Math.random() * PEP_TALKS.length)];
+  toast.textContent = msg;
+  toast.className = 'show';
+  setTimeout(function() { toast.className = ''; }, 3200);
+}
+
+// ── RESULT ──
+function showResult(outcome, reason) {
+  if (synth) synth.cancel();
+  document.getElementById('quiz-screen').style.display = 'none';
+  var rs = document.getElementById('result-screen');
+  rs.style.display = 'flex';
+
+  var emoji, title, msg;
+
+  if (outcome === 'pass') {
+    if (reason === 'early') {
+      emoji = '\uD83C\uDF89'; title = 'You Passed Early!';
+      msg = 'Fantastic! You locked in ' + correctCount + ' correct answers before finishing all 20 questions. You are well prepared for the citizenship civics test!';
+    } else {
+      var pct = Math.round(correctCount / TOTAL * 100);
+      if (pct === 100) { emoji = '\uD83C\uDFC6'; title = 'Perfect Score!'; msg = 'Incredible \u2014 100%! You know these civics questions inside and out. You are absolutely ready for the test!'; }
+      else if (pct >= 80) { emoji = '\uD83C\uDF1F'; title = 'Outstanding!'; msg = 'You scored ' + correctCount + ' out of ' + TOTAL + '. Excellent work! You are fully ready for the civics test.'; }
+      else { emoji = '\uD83C\uDF8A'; title = 'You Passed!'; msg = 'Great job! You got ' + correctCount + ' out of ' + TOTAL + ' correct \u2014 enough to pass. Keep practicing to build even more confidence!'; }
+    }
+    document.getElementById('r-pass-badge').textContent = '\u2713 PASSED';
+    document.getElementById('r-pass-badge').className = 'r-pass-badge pass';
+    launchBalloons(false);
+    setTimeout(function(){ launchBalloons(false); }, 900);
+    setTimeout(function(){ launchBalloons(true); }, 1800);
+  } else {
+    if (reason === 'early') {
+      emoji = '\uD83D\uDE24'; title = 'Keep Practicing!';
+      msg = 'You got too many wrong answers to reach 12 correct. Don\u2019t worry \u2014 every attempt makes you stronger. Review the material and try again!';
+    } else {
+      emoji = '\uD83D\uDCDA'; title = 'Almost There!';
+      msg = 'You scored ' + correctCount + ' out of ' + TOTAL + '. You need 12 to pass. Review the questions you missed and try again \u2014 you are closer than you think!';
+    }
+    document.getElementById('r-pass-badge').textContent = '\u2717 Not passed this time';
+    document.getElementById('r-pass-badge').className = 'r-pass-badge fail';
+  }
+
+  document.getElementById('r-emoji').innerHTML = emoji;
+  document.getElementById('r-title').textContent = title;
+  document.getElementById('r-score-big').textContent = correctCount;
+  document.getElementById('r-msg').textContent = msg;
+}
+</script>
+</body>
+</html>
